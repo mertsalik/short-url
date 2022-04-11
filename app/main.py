@@ -1,3 +1,4 @@
+from typing import Any
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse, JSONResponse
 
@@ -8,7 +9,29 @@ class OriginalURLInput(BaseModel):
     original_url: AnyHttpUrl
 
 
+def encode_url(url: str) -> str:
+    """compute a unique hash of the given URL
+    Parameters
+    ----------
+    url: str
+
+    Return
+    ------
+    str
+    """
+    raise NotImplementedError()
+
+
+class UrlStorage:
+    async def get(self, key: str) -> Any:
+        raise NotImplementedError()
+
+    async def save(self, key: str, value: Any):
+        raise NotImplementedError()
+
+
 class URLShorteningService:
+
     async def shorten(self, original_url: str) -> str:
         """Shorten a url.
 
@@ -22,7 +45,15 @@ class URLShorteningService:
         str
             Shortened url
         """
-        raise NotImplementedError()
+        unique_identifier = encode_url(url=original_url)
+        storage = UrlStorage()
+        try:
+            await storage.save(key=unique_identifier, value=original_url)
+        except Exception:
+            # TODO: what if multiple users encodes the same URL ?
+            raise
+
+        return unique_identifier
 
     async def get_original_url(self, unique_id: str) -> str:
         """Get original url from the storage if exists.
@@ -38,7 +69,9 @@ class URLShorteningService:
             original url of the given unique identifier
         """
 
-        raise NotImplementedError()
+        storage = UrlStorage()
+        original_url = await storage.get(key=unique_id)
+        return original_url
 
 
 app = FastAPI()
