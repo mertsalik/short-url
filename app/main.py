@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse, JSONResponse
 
-from pydantic import BaseModel
+from pydantic import BaseModel, AnyHttpUrl
 
 
 class OriginalURLInput(BaseModel):
-    original_url: str
+    original_url: AnyHttpUrl
 
 
 class URLShorteningService:
@@ -53,7 +53,6 @@ async def root():
 async def shorten_url(url_input: OriginalURLInput):
     service = URLShorteningService()
     shortened_url = await service.shorten(original_url=url_input.original_url)
-    print(shortened_url)
     content = {"ShortURL": shortened_url}
     return JSONResponse(status_code=201, content=content)
 

@@ -40,3 +40,14 @@ async def test_shorten_url(mock_shorten):
 
     assert response.status_code == 201
     assert response.json() == {"ShortURL": "/u/SHORT-ALIAS"}
+
+
+@pytest.mark.anyio
+async def test_shorten_invalid_url():
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        response = await client.post(
+            url="/url",
+            json={"original_url": "invalid-url-foo"},
+        )
+
+    assert response.status_code == 422
