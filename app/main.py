@@ -10,9 +10,34 @@ class OriginalURLInput(BaseModel):
 
 class URLShorteningService:
     async def shorten(self, original_url: str) -> str:
+        """Shorten a url.
+
+        Parameters
+        ----------
+        original_url: str
+            url to be shortened
+
+        Return
+        ------
+        str
+            Shortened url
+        """
         raise NotImplementedError()
 
     async def get_original_url(self, unique_id: str) -> str:
+        """Get original url from the storage if exists.
+
+        Parameters
+        ----------
+        unique_id: str
+            path parameter of the shortened url
+
+        Return
+        ------
+        str
+            original url of the given unique identifier
+        """
+
         raise NotImplementedError()
 
 
