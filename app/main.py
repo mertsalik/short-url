@@ -1,5 +1,5 @@
 from typing import Any
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 
 from pydantic import BaseModel, AnyHttpUrl
@@ -31,7 +31,6 @@ class UrlStorage:
 
 
 class URLShorteningService:
-
     async def shorten(self, original_url: str) -> str:
         """Shorten a url.
 
@@ -55,12 +54,12 @@ class URLShorteningService:
 
         return unique_identifier
 
-    async def get_original_url(self, unique_id: str) -> str:
+    async def get_original_url(self, url_key: str) -> str:
         """Get original url from the storage if exists.
 
         Parameters
         ----------
-        unique_id: str
+        url_key: str
             path parameter of the shortened url
 
         Return
@@ -70,8 +69,12 @@ class URLShorteningService:
         """
 
         storage = UrlStorage()
-        original_url = await storage.get(key=unique_id)
+        original_url = await storage.get(key=url_key)
         return original_url
+
+    async def delete_url(self, url_key: str):
+        """Deactivate given short-url from the system."""
+        raise NotImplementedError()
 
 
 app = FastAPI()
@@ -90,8 +93,18 @@ async def shorten_url(url_input: OriginalURLInput):
     return JSONResponse(status_code=201, content=content)
 
 
-@app.get("/u/{unique_id}")
-async def access_url(unique_id: str):
+@app.delete("/url/{url_key}")
+async def delete_url(url_key: str):
     service = URLShorteningService()
-    original_url = await service.get_original_url(unique_id=unique_id)
+    original_url = await service.get_original_url(url_key=url_key)
+    if not original_url:
+        raise HTTPException(status_code=404, detail="Url not found!")
+    await service.delete_url(url_key=url_key)
+    return JSONResponse(status_code=204)
+
+
+@app.get("/u/{url_key}")
+async def access_url(url_key: str):
+    service = URLShorteningService()
+    original_url = await service.get_original_url(url_key=url_key)
     return RedirectResponse(original_url, status_code=302)

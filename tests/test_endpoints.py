@@ -51,3 +51,33 @@ async def test_shorten_invalid_url():
         )
 
     assert response.status_code == 422
+
+
+@pytest.mark.anyio
+@patch("app.main.URLShorteningService.delete_url")
+@patch("app.main.URLShorteningService.get_original_url")
+async def test_delete_url_success(mock_get_original_url, mock_delete_url):
+    async def mock_return_none(*args, **kwargs):
+        return None
+
+    async def mock_return_something(*args, **kwargs):
+        return "http://test.com/some-long-url/foo"
+
+    mock_delete_url.side_effect = mock_return_none
+    mock_get_original_url.side_effect = mock_return_something
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        response = await client.delete(url="/url/FOO-BAR")
+    assert response.status_code == 204
+
+
+@pytest.mark.anyio
+@patch("app.main.URLShorteningService.get_original_url")
+async def test_delete_url_not_found(mock_get_original_url):
+    async def mock_return(*args, **kwargs):
+        return None
+
+    mock_get_original_url.side_effect = mock_return
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        response = await client.delete(url="/url/FOO-BAR")
+    assert response.status_code == 404
