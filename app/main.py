@@ -29,6 +29,9 @@ class UrlStorage:
     async def save(self, key: str, value: Any):
         raise NotImplementedError()
 
+    async def remove(self, key: str):
+        raise NotImplementedError()
+
 
 class URLShorteningService:
     async def shorten(self, original_url: str) -> str:
@@ -73,8 +76,16 @@ class URLShorteningService:
         return original_url
 
     async def delete_url(self, url_key: str):
-        """Deactivate given short-url from the system."""
-        raise NotImplementedError()
+        """Deactivate given short-url from the system.
+
+        Parameters
+        ----------
+        url_key: str
+            path parameter of the shortened url
+        """
+        storage = UrlStorage()
+        original_url = await storage.remove(key=url_key)
+        return original_url
 
 
 app = FastAPI()
