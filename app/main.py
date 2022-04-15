@@ -1,4 +1,8 @@
 from typing import Any
+
+from hashlib import md5
+from base64 import b64encode
+
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 
@@ -9,8 +13,13 @@ class OriginalURLInput(BaseModel):
     original_url: AnyHttpUrl
 
 
-def encode_url(url: str) -> str:
-    """compute a unique hash of the given URL
+def encode_url(url: str, char_count: int = 6) -> str:
+    """create N (default=6) digit alias string for the given URL string
+    Its not unique, try changing the url parameter ( add more path parameters ) in consecutive
+    calls in order to achive uniqueness.
+
+    first 6 characters of ( base64 ( md5( url ) )  )
+
     Parameters
     ----------
     url: str
@@ -19,7 +28,9 @@ def encode_url(url: str) -> str:
     ------
     str
     """
-    raise NotImplementedError()
+    if not url:
+        raise ValueError("Empty url string can't be encoded!") from None
+    return b64encode(md5(url.encode("utf-8")).digest()).decode()[:char_count]
 
 
 class UrlStorage:
