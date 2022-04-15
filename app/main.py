@@ -15,8 +15,8 @@ class OriginalURLInput(BaseModel):
 
 def encode_url(url: str, char_count: int = 6) -> str:
     """create N (default=6) digit alias string for the given URL string
-    Its not unique, try changing the url parameter ( add more path parameters ) in consecutive
-    calls in order to achive uniqueness.
+    Its not unique, try changing the url parameter ( add more path parameters )
+    in consecutive calls in order to achive uniqueness.
 
     first 6 characters of ( base64 ( md5( url ) )  )
 
