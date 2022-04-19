@@ -1,6 +1,3 @@
-from hashlib import md5
-from base64 import b64encode
-
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 
