@@ -1,5 +1,5 @@
 import pytest
-from app.main import encode_url
+from app.service import encode_url
 
 
 def test_encode_url():
