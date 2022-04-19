@@ -1,12 +1,11 @@
-from typing import Any
-
 from hashlib import md5
 from base64 import b64encode
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 
 from pydantic import BaseModel, AnyHttpUrl
+from .db import AbstractStorage, get_url_storage
 
 
 class OriginalURLInput(BaseModel):
@@ -33,18 +32,10 @@ def encode_url(url: str, char_count: int = 6) -> str:
     return b64encode(md5(url.encode("utf-8")).digest()).decode()[:char_count]
 
 
-class UrlStorage:
-    async def get(self, key: str) -> Any:
-        raise NotImplementedError()
-
-    async def save(self, key: str, value: Any):
-        raise NotImplementedError()
-
-    async def remove(self, key: str):
-        raise NotImplementedError()
-
-
 class URLShorteningService:
+    def __init__(self, storage: AbstractStorage) -> None:
+        self.storage = storage
+
     async def shorten(self, original_url: str) -> str:
         """Shorten a url.
 
@@ -59,9 +50,8 @@ class URLShorteningService:
             Shortened url
         """
         unique_identifier = encode_url(url=original_url)
-        storage = UrlStorage()
         try:
-            await storage.save(key=unique_identifier, value=original_url)
+            await self.storage.save(key=unique_identifier, value=original_url)
         except Exception:
             # TODO: what if multiple users encodes the same URL ?
             raise
@@ -81,9 +71,7 @@ class URLShorteningService:
         str
             original url of the given unique identifier
         """
-
-        storage = UrlStorage()
-        original_url = await storage.get(key=url_key)
+        original_url = await self.storage.get(key=url_key)
         return original_url
 
     async def delete_url(self, url_key: str):
@@ -94,8 +82,7 @@ class URLShorteningService:
         url_key: str
             path parameter of the shortened url
         """
-        storage = UrlStorage()
-        original_url = await storage.remove(key=url_key)
+        original_url = await self.storage.remove(key=url_key)
         return original_url
 
 
@@ -108,16 +95,18 @@ async def root():
 
 
 @app.post("/url")
-async def shorten_url(url_input: OriginalURLInput):
-    service = URLShorteningService()
+async def shorten_url(
+    url_input: OriginalURLInput, storage=Depends(get_url_storage)
+):  # NOQA
+    service = URLShorteningService(storage=storage)
     shortened_url = await service.shorten(original_url=url_input.original_url)
     content = {"ShortURL": shortened_url}
     return JSONResponse(status_code=201, content=content)
 
 
 @app.delete("/url/{url_key}")
-async def delete_url(url_key: str):
-    service = URLShorteningService()
+async def delete_url(url_key: str, storage=Depends(get_url_storage)):
+    service = URLShorteningService(storage=storage)
     original_url = await service.get_original_url(url_key=url_key)
     if not original_url:
         raise HTTPException(status_code=404, detail="Url not found!")
@@ -126,7 +115,7 @@ async def delete_url(url_key: str):
 
 
 @app.get("/u/{url_key}")
-async def access_url(url_key: str):
-    service = URLShorteningService()
+async def access_url(url_key: str, storage=Depends(get_url_storage)):  # NOQA
+    service = URLShorteningService(storage=storage)
     original_url = await service.get_original_url(url_key=url_key)
     return RedirectResponse(original_url, status_code=302)
