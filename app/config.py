@@ -4,6 +4,7 @@ from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     db_host = ""
+    db_port = ""
     db_username = ""
     db_password = ""
     db_bucket_name = ""
