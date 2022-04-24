@@ -9,6 +9,7 @@ from couchbase.cluster import (
     ClusterOptions,
     LockMode,
 )
+from couchbase import exceptions as cb_exceptions
 
 from fastapi import Depends
 
@@ -50,14 +51,17 @@ class UrlStorage(AbstractStorage):
 
     def get_connection_string(self) -> str:
         """build connection string from configurations (environment)"""
-        return f"couchbase://{self.host}:{self.port}"
+        return f"couchbase://{self.host}&operation_timeout=30"
 
     def get_authenticator(self) -> Authenticator:
         """create a Couchbase authenticator using configuration settings"""
         return PasswordAuthenticator(self.username, self.password)
 
     def get_bucket(self) -> Bucket:
-        """initialize and return a Couchbase bucket"""
+        """initialize and return a Couchbase bucket
+
+        raises: couchbase.exceptions.BucketNotFoundException
+        """
         cluster = Cluster(
             connection_string=self.get_connection_string(),
             options=ClusterOptions(
@@ -68,18 +72,22 @@ class UrlStorage(AbstractStorage):
 
     async def get(self, key: str) -> Any:
         bucket = self.get_bucket()
-        collection = bucket.default_collection()
-        return collection.get(key)
+        try:
+            return bucket.get(key).value
+        except cb_exceptions.DocumentNotFoundException as dnf_ex:
+            # TODO: log this
+            print(dnf_ex)
+            pass
 
     async def save(self, key: str, value: Any):
         bucket = self.get_bucket()
         collection = bucket.default_collection()
-        collection.insert(key, value)
+        await collection.insert(key, value)
 
     async def remove(self, key: str):
         bucket = self.get_bucket()
         collection = bucket.default_collection()
-        collection.remove(key)
+        await collection.remove(key)
 
 
 def get_url_storage(
