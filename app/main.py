@@ -39,8 +39,8 @@ async def delete_url(url_key: str, storage=Depends(get_url_storage)):
     return JSONResponse(status_code=204)
 
 
-@app.get("/u/{url_key}")
+@app.get("/u/{url_key}", response_class=RedirectResponse, status_code=302)
 async def access_url(url_key: str, storage=Depends(get_url_storage)):  # NOQA
     service = URLShorteningService(storage=storage)
     original_url = await service.get_original_url(url_key=url_key)
-    return RedirectResponse(original_url, status_code=302)
+    return original_url
