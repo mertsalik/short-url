@@ -42,8 +42,9 @@ class URLShorteningService:
             Shortened url
         """
         unique_identifier = encode_url(url=original_url)
+        data = {"url": original_url}
         try:
-            await self.storage.save(key=unique_identifier, value=original_url)
+            await self.storage.save(key=unique_identifier, value=data)
         except Exception:
             # TODO: what if multiple users encodes the same URL ?
             raise
@@ -52,6 +53,8 @@ class URLShorteningService:
 
     async def get_original_url(self, url_key: str) -> str:
         """Get original url from the storage if exists.
+
+        raises: couchbase.exceptions.DocumentNotFoundException
 
         Parameters
         ----------
@@ -63,8 +66,8 @@ class URLShorteningService:
         str
             original url of the given unique identifier
         """
-        original_url = await self.storage.get(key=url_key)
-        return original_url
+        data = await self.storage.get(key=url_key)
+        return data.get('url')
 
     async def delete_url(self, url_key: str):
         """Deactivate given short-url from the system.
